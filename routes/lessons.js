@@ -3,6 +3,66 @@ import { lessonsCollection } from "../config/db.js";
 
 const router = express.Router();
 
+router.get("/", async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 12,
+      sort = "newest",
+      category,
+      emotionalTone,
+      search,
+    } = req.query;
+
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = { privacy: "public" };
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (emotionalTone) {
+      query.emotionalTone = emotionalTone;
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { story: { $regex: search, $options: "i" } },
+        { tags: { $in: [new RegExp(search, "i")] } },
+      ];
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sort === "mostLiked") sortOption = { likesCount: -1 };
+    if (sort === "mostSaved") sortOption = { favoritesCount: -1 };
+    if (sort === "alphabetical") sortOption = { title: 1 };
+
+    const lessons = await lessonsCollection
+      .find(query)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limitNum)
+      .toArray();
+
+    const totalLessons = await lessonsCollection.countDocuments(query);
+    const totalPages = Math.ceil(totalLessons / limitNum);
+
+    res.send({
+      lessons,
+      totalLessons,
+      totalPages,
+      currentPage: pageNum,
+    });
+  } catch (error) {
+    console.error("Fetch Lessons Error:", error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 router.get("/featured", async (req, res) => {
   try {
     const { limit = 8 } = req.query;

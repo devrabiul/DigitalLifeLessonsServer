@@ -51,7 +51,6 @@ router.post("/sync", async (req, res) => {
   }
 });
 
-
 router.get("/top-contributors", async (req, res) => {
   try {
     const { limit = 5 } = req.query;
