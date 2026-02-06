@@ -6,11 +6,13 @@ const client = new MongoClient(process.env.MONGODB_URI);
 
 export let usersCollection;
 export let lessonsCollection;
+export let reportsCollection;
 
 export const connectDB = async () => {
   await client.connect();
-  const db = client.db("digital_life");
+  const db = client.db(); // Uses the DB from MONGODB_URI
   usersCollection = db.collection("users");
   lessonsCollection = db.collection("lessons");
+  reportsCollection = db.collection("reports");
   console.log("MongoDB Connected");
 };

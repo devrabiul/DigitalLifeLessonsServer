@@ -23,27 +23,42 @@ router.post("/sync", async (req, res) => {
 
     const { name, photoURL } = req.body;
 
+    if (!usersCollection) {
+      console.error("DATABASE NOT INITIALIZED");
+      return res.status(500).json({ message: "Database not ready" });
+    }
+
     let user = await usersCollection.findOne({ email });
 
     if (!user) {
       user = {
-        name: name || "User",
+        name: name || decoded.name || "User",
         email,
-        photoURL: photoURL || "",
+        photoURL: photoURL || decoded.picture || "",
         role: "user",
         isPremium: false,
         createdAt: new Date(),
       };
 
       await usersCollection.insertOne(user);
+    } else {
+      // Optional: Update name/photo if they changed in Firebase but not in our DB
+      const updateData = {};
+      if (name && name !== user.name) updateData.name = name;
+      if (photoURL && photoURL !== user.photoURL) updateData.photoURL = photoURL;
+
+      if (Object.keys(updateData).length > 0) {
+        await usersCollection.updateOne({ email }, { $set: updateData });
+        user = { ...user, ...updateData };
+      }
     }
 
     const token = createToken(user);
 
+    // Return the full user object along with the token
     res.json({
       token,
-      role: user.role,
-      isPremium: user.isPremium,
+      user, // Full MongoDB user object
     });
   } catch (err) {
     console.error("SYNC ERROR:", err);

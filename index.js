@@ -5,6 +5,7 @@ import { connectDB } from "./config/db.js";
 import usersRoute from "./routes/users.js";
 import lessonsRoute from "./routes/lessons.js";
 import paymentsRoute from "./routes/payments.js";
+import statsRoute from "./routes/stats.js";
 import Stripe from "stripe";
 import { usersCollection } from "./config/db.js";
 
@@ -63,6 +64,7 @@ app.use(express.json());
 app.use("/users", usersRoute);
 app.use("/lessons", lessonsRoute);
 app.use("/payments", paymentsRoute);
+app.use("/stats", statsRoute);
 
 app.get("/", (req, res) => {
   res.send("Server running...");
