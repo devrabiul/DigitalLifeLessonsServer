@@ -1,6 +1,6 @@
 import express from "express";
 import admin from "../config/firebaseAdmin.js";
-import { usersCollection } from "../config/db.js";
+import { usersCollection, lessonsCollection } from "../config/db.js";
 import { createToken } from "../utils/jwt.js";
 
 const router = express.Router();
@@ -48,6 +48,35 @@ router.post("/sync", async (req, res) => {
   } catch (err) {
     console.error("SYNC ERROR:", err);
     res.status(500).json({ message: "User sync failed" });
+  }
+});
+
+
+router.get("/top-contributors", async (req, res) => {
+  try {
+    const { limit = 5 } = req.query;
+
+    const contributors = await lessonsCollection
+      .aggregate([
+        { $match: { privacy: "public" } },
+        {
+          $group: {
+            _id: "$author.email",
+            name: { $first: "$author.name" },
+            photoURL: { $first: "$author.photo" },
+            email: { $first: "$author.email" },
+            lessonsCount: { $sum: 1 },
+            totalLikes: { $sum: "$likesCount" },
+          },
+        },
+        { $sort: { lessonsCount: -1, totalLikes: -1 } },
+        { $limit: parseInt(limit) },
+      ])
+      .toArray();
+
+    res.send(contributors);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
   }
 });
 

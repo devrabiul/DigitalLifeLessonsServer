@@ -36,4 +36,27 @@ router.get("/featured", async (req, res) => {
   }
 });
 
+router.get("/most-saved", async (req, res) => {
+  try {
+    const { limit = 5 } = req.query;
+
+    const lessons = await lessonsCollection
+      .find({ privacy: "public" })
+      .sort({ favoritesCount: -1 })
+      .limit(parseInt(limit))
+      .project({
+        title: 1,
+        author: 1,
+        authorName: 1,
+        favoritesCount: 1,
+        category: 1,
+      })
+      .toArray();
+
+    res.send(lessons);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
 export default router;
