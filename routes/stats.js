@@ -3,28 +3,24 @@ import { usersCollection, lessonsCollection, reportsCollection } from "../config
 
 const router = express.Router();
 
-// Admin Dashboard Stats
 router.get("/admin", async (req, res) => {
   try {
     const totalUsers = await usersCollection.countDocuments();
     const totalPublicLessons = await lessonsCollection.countDocuments({ privacy: "public" });
     const totalReports = await reportsCollection.countDocuments();
 
-    // Today's lessons
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayLessons = await lessonsCollection.countDocuments({
       createdAt: { $gte: today }
     });
 
-    // Most active contributors (top 5)
     const activeContributors = await lessonsCollection.aggregate([
       { $group: { _id: "$author.email", name: { $first: "$author.name" }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 5 }
     ]).toArray();
 
-    // Lesson growth (last 7 days)
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
@@ -56,27 +52,20 @@ router.get("/admin", async (req, res) => {
   }
 });
 
-// User Dashboard Stats
 router.get("/user/:email", async (req, res) => {
   try {
     const { email } = req.params;
 
     const lessonsCount = await lessonsCollection.countDocuments({ "author.email": email });
     
-    // Total saved (favorites) - assuming user object in DB has a favorites array or similar
-    // Actually, it might be in lessonsCollection where users mark as favorite.
-    // Let's check how favorites are stored. Usually 1 lesson has multiple favorites.
-    // Wait, is there a favoritesCollection? Let's check usersCollection structure.
     const user = await usersCollection.findOne({ email });
     const favoritesCount = user?.favorites?.length || 0;
 
-    // Recently added lessons by this user
     const recentLessons = await lessonsCollection.find({ "author.email": email })
       .sort({ createdAt: -1 })
       .limit(5)
       .toArray();
 
-    // Weekly contributions (last 7 days)
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();

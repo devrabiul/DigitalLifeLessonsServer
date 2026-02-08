@@ -42,7 +42,6 @@ router.post("/sync", async (req, res) => {
 
       await usersCollection.insertOne(user);
     } else {
-      // Optional: Update name/photo if they changed in Firebase but not in our DB
       const updateData = {};
       if (name && name !== user.name) updateData.name = name;
       if (photoURL && photoURL !== user.photoURL) updateData.photoURL = photoURL;
@@ -55,10 +54,9 @@ router.post("/sync", async (req, res) => {
 
     const token = createToken(user);
 
-    // Return the full user object along with the token
     res.json({
       token,
-      user, // Full MongoDB user object
+      user,
     });
   } catch (err) {
     console.error("SYNC ERROR:", err);

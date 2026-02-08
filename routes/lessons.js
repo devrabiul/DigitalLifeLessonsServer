@@ -1,5 +1,6 @@
 import express from "express";
-import { lessonsCollection } from "../config/db.js";
+import { lessonsCollection, usersCollection } from "../config/db.js";
+import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -60,6 +61,64 @@ router.get("/", async (req, res) => {
   } catch (error) {
     console.error("Fetch Lessons Error:", error);
     res.status(500).send({ message: error.message });
+  }
+});
+
+router.post("/", verifyToken, async (req, res) => {
+  try {
+    const {
+      title,
+      story,
+      category,
+      emotionalTone,
+      image,
+      privacy,
+      access_level,
+    } = req.body;
+
+    if (!title || !story || !category || !emotionalTone || !privacy || !access_level) {
+      return res.status(400).json({ message: "All fields are required except image" });
+    }
+
+    const user = await usersCollection.findOne({ email: req.user.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (access_level === "premium" && !user.isPremium && user.role !== "admin") {
+      return res.status(403).json({ message: "Only premium users can create premium lessons" });
+    }
+
+    const newLesson = {
+      title,
+      story,
+      shortDescription: story.slice(0, 150) + (story.length > 150 ? "..." : ""),
+      category,
+      emotionalTone,
+      photoURL: image || "",
+      privacy,
+      access_level,
+      author: {
+        name: user.name,
+        email: user.email,
+        photo: user.photoURL,
+        id: user._id,
+      },
+      createdAt: new Date(),
+      likesCount: 0,
+      favoritesCount: 0,
+      isFeatured: false,
+    };
+
+    const result = await lessonsCollection.insertOne(newLesson);
+    res.status(201).json({
+      message: "Lesson created successfully",
+      lessonId: result.insertedId,
+      lesson: newLesson,
+    });
+  } catch (error) {
+    console.error("Add Lesson Error:", error);
+    res.status(500).json({ message: error.message });
   }
 });
 

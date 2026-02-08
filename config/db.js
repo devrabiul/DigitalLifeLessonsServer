@@ -10,7 +10,7 @@ export let reportsCollection;
 
 export const connectDB = async () => {
   await client.connect();
-  const db = client.db(); // Uses the DB from MONGODB_URI
+  const db = client.db();
   usersCollection = db.collection("users");
   lessonsCollection = db.collection("lessons");
   reportsCollection = db.collection("reports");
