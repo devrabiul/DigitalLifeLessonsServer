@@ -1,6 +1,7 @@
 import express from "express";
 import { lessonsCollection, usersCollection } from "../config/db.js";
 import { verifyToken } from "../middleware/auth.js";
+import { ObjectId } from "mongodb";
 
 const router = express.Router();
 
@@ -64,6 +65,19 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/my-lessons", verifyToken, async (req, res) => {
+  try {
+    const email = req.user.email;
+    const lessons = await lessonsCollection
+      .find({ "author.email": email })
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.json(lessons);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 router.post("/", verifyToken, async (req, res) => {
   try {
     const {
@@ -118,6 +132,63 @@ router.post("/", verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error("Add Lesson Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.put("/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, story, category, emotionalTone, photoURL, privacy, access_level } = req.body;
+
+    const lesson = await lessonsCollection.findOne({ _id: new ObjectId(id) });
+    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    if (lesson.author.email !== req.user.email) {
+      return res.status(403).json({ message: "Unauthorized to update this lesson" });
+    }
+
+    const user = await usersCollection.findOne({ email: req.user.email });
+    if (access_level === "premium" && !user.isPremium && user.role !== "admin") {
+      return res.status(403).json({ message: "Upgrade to premium to set premium access level" });
+    }
+
+    const updatedLesson = {
+      $set: {
+        ...(title && { title }),
+        ...(story && { 
+          story,
+          shortDescription: story.slice(0, 150) + (story.length > 150 ? "..." : "")
+        }),
+        ...(category && { category }),
+        ...(emotionalTone && { emotionalTone }),
+        ...(photoURL !== undefined && { photoURL }),
+        ...(privacy && { privacy }),
+        ...(access_level && { access_level }),
+        updatedAt: new Date(),
+      }
+    };
+
+    await lessonsCollection.updateOne({ _id: new ObjectId(id) }, updatedLesson);
+    res.json({ message: "Lesson updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.delete("/:id", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lesson = await lessonsCollection.findOne({ _id: new ObjectId(id) });
+    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    if (lesson.author.email !== req.user.email && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Unauthorized to delete this lesson" });
+    }
+
+    await lessonsCollection.deleteOne({ _id: new ObjectId(id) });
+    res.json({ message: "Lesson deleted successfully" });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
