@@ -8,6 +8,7 @@ export let usersCollection;
 export let lessonsCollection;
 export let reportsCollection;
 export let favoritesCollection;
+export let commentsCollection;
 
 export const connectDB = async () => {
   await client.connect();
@@ -16,5 +17,6 @@ export const connectDB = async () => {
   lessonsCollection = db.collection("lessons");
   reportsCollection = db.collection("reports");
   favoritesCollection = db.collection("favorites");
+  commentsCollection = db.collection("comments");
   console.log("MongoDB Connected");
 };

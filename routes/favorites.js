@@ -49,6 +49,7 @@ router.post("/", verifyToken, async (req, res) => {
       lessonId: lesson._id,
       title: lesson.title,
       authorName: lesson.author?.name || "Unknown",
+      authorPhoto: lesson.author?.photo || "",
       category: lesson.category,
       emotionalTone: lesson.emotionalTone,
       photoURL: lesson.photoURL,

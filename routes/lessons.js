@@ -254,4 +254,124 @@ router.get("/most-saved", async (req, res) => {
   }
 });
 
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Atomically increment viewsCount and return the updated document
+    const result = await lessonsCollection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $inc: { viewsCount: 1 } },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) return res.status(404).json({ message: "Lesson not found" });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post("/:id/like", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.user;
+
+    const lesson = await lessonsCollection.findOne({ _id: new ObjectId(id) });
+    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    const liked = lesson.likes?.includes(email);
+    const update = liked
+      ? { $pull: { likes: email }, $inc: { likesCount: -1 } }
+      : { $addToSet: { likes: email }, $inc: { likesCount: 1 } };
+
+    await lessonsCollection.updateOne({ _id: new ObjectId(id) }, update);
+    res.json({ liked: !liked });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post("/:id/report", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const { email } = req.user;
+
+    const report = {
+      lessonId: new ObjectId(id),
+      reporterEmail: email,
+      reason,
+      timestamp: new Date(),
+    };
+
+    const { reportsCollection } = await import("../config/db.js");
+    await reportsCollection.insertOne(report);
+    res.status(201).json({ message: "Lesson reported successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.post("/:id/comments", verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { comment } = req.body;
+    const { email, name, photoURL } = req.user;
+
+    const newComment = {
+      lessonId: new ObjectId(id),
+      userEmail: email,
+      userName: name,
+      userPhoto: photoURL,
+      comment,
+      createdAt: new Date(),
+    };
+
+    const { commentsCollection } = await import("../config/db.js");
+    await commentsCollection.insertOne(newComment);
+    res.status(201).json(newComment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/:id/comments", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { commentsCollection } = await import("../config/db.js");
+    const comments = await commentsCollection
+      .find({ lessonId: new ObjectId(id) })
+      .sort({ createdAt: -1 })
+      .toArray();
+    res.json(comments);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/:id/similar", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const lesson = await lessonsCollection.findOne({ _id: new ObjectId(id) });
+    if (!lesson) return res.status(404).json({ message: "Lesson not found" });
+
+    const similar = await lessonsCollection
+      .find({
+        _id: { $ne: new ObjectId(id) },
+        privacy: "public",
+        $or: [
+          { category: lesson.category },
+          { emotionalTone: lesson.emotionalTone }
+        ]
+      })
+      .limit(6)
+      .toArray();
+
+    res.json(similar);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
