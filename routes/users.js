@@ -64,20 +64,6 @@ router.post("/sync", async (req, res) => {
   }
 });
 
-router.get("/:email", async (req, res) => {
-  try {
-    const { email } = req.params;
-    const user = await usersCollection.findOne(
-      { email },
-      { projection: { _id: 0, name: 1, email: 1, photoURL: 1, isPremium: 1, role: 1, createdAt: 1 } }
-    );
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
-  } catch (error) {
-    res.status(500).send({ message: error.message });
-  }
-});
-
 router.get("/top-contributors", async (req, res) => {
   try {
     const { limit = 5 } = req.query;
@@ -101,6 +87,20 @@ router.get("/top-contributors", async (req, res) => {
       .toArray();
 
     res.send(contributors);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
+router.get("/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+    const user = await usersCollection.findOne(
+      { email },
+      { projection: { _id: 0, name: 1, email: 1, photoURL: 1, isPremium: 1, role: 1, createdAt: 1 } }
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

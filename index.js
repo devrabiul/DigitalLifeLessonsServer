@@ -7,6 +7,7 @@ import lessonsRoute from "./routes/lessons.js";
 import paymentsRoute from "./routes/payments.js";
 import statsRoute from "./routes/stats.js";
 import favoritesRoute from "./routes/favorites.js";
+import adminRoute from "./routes/admin.js";
 import Stripe from "stripe";
 import { usersCollection } from "./config/db.js";
 
@@ -76,6 +77,7 @@ app.use("/lessons", lessonsRoute);
 app.use("/payments", paymentsRoute);
 app.use("/stats", statsRoute);
 app.use("/favorites", favoritesRoute);
+app.use("/admin", adminRoute);
 
 app.get("/", (req, res) => {
   res.send("Server running...");

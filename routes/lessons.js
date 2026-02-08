@@ -258,7 +258,6 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Atomically increment viewsCount and return the updated document
     const result = await lessonsCollection.findOneAndUpdate(
       { _id: new ObjectId(id) },
       { $inc: { viewsCount: 1 } },
