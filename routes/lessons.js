@@ -14,6 +14,7 @@ router.get("/", async (req, res) => {
       category,
       emotionalTone,
       search,
+      authorEmail,
     } = req.query;
 
     const pageNum = parseInt(page);
@@ -21,6 +22,10 @@ router.get("/", async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     const query = { privacy: "public" };
+
+    if (authorEmail) {
+      query["author.email"] = authorEmail;
+    }
 
     if (category) {
       query.category = category;

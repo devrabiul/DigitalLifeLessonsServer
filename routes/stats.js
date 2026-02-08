@@ -1,5 +1,5 @@
 import express from "express";
-import { usersCollection, lessonsCollection, reportsCollection } from "../config/db.js";
+import { usersCollection, lessonsCollection, reportsCollection, favoritesCollection } from "../config/db.js";
 
 const router = express.Router();
 
@@ -57,9 +57,7 @@ router.get("/user/:email", async (req, res) => {
     const { email } = req.params;
 
     const lessonsCount = await lessonsCollection.countDocuments({ "author.email": email });
-    
-    const user = await usersCollection.findOne({ email });
-    const favoritesCount = user?.favorites?.length || 0;
+    const favoritesCount = await favoritesCollection.countDocuments({ userEmail: email });
 
     const recentLessons = await lessonsCollection.find({ "author.email": email })
       .sort({ createdAt: -1 })

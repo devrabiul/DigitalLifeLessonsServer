@@ -92,4 +92,36 @@ router.get("/top-contributors", async (req, res) => {
   }
 });
 
+router.put("/update", async (req, res) => {
+  try {
+    const { email, name, photoURL } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (photoURL) updateData.photoURL = photoURL;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "No data to update" });
+    }
+
+    const result = await usersCollection.updateOne(
+      { email },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const updatedUser = await usersCollection.findOne({ email });
+    res.json({ message: "Profile updated", user: updatedUser });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 export default router;
