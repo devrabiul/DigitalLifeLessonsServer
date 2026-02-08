@@ -11,12 +11,19 @@ export let favoritesCollection;
 export let commentsCollection;
 
 export const connectDB = async () => {
-  await client.connect();
-  const db = client.db();
-  usersCollection = db.collection("users");
-  lessonsCollection = db.collection("lessons");
-  reportsCollection = db.collection("reports");
-  favoritesCollection = db.collection("favorites");
-  commentsCollection = db.collection("comments");
-  console.log("MongoDB Connected");
+  try {
+    if (usersCollection) return;
+    
+    await client.connect();
+    const db = client.db();
+    usersCollection = db.collection("users");
+    lessonsCollection = db.collection("lessons");
+    reportsCollection = db.collection("reports");
+    favoritesCollection = db.collection("favorites");
+    commentsCollection = db.collection("comments");
+    console.log("MongoDB Connected");
+  } catch (error) {
+    console.error("MongoDB Connection Error:", error);
+    throw error;
+  }
 };

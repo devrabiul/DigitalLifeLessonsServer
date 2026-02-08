@@ -62,6 +62,15 @@ app.post(
 
 app.use(express.json());
 
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Database connection failed" });
+  }
+});
+
 app.use("/users", usersRoute);
 app.use("/lessons", lessonsRoute);
 app.use("/payments", paymentsRoute);
@@ -72,8 +81,11 @@ app.get("/", (req, res) => {
   res.send("Server running...");
 });
 
-connectDB().then(() => {
-  app.listen(process.env.PORT || 5000, () => {
-    console.log("Server started");
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
   });
-});
+}
+
+export default app;
