@@ -6,5 +6,6 @@ node_modules/
 .env
 .env.local
 
+firebase-admin.json
 .idea
 .DS_Store
